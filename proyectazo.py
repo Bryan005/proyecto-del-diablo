@@ -1,366 +1,431 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import messagebox, ttk
+from tkinter import PhotoImage
+import csv, re
+
+users = []
+
+# Función para leer usuarios desde un archivo CSV
+def load_users_from_csv():
+    try:
+        with open('users.csv', mode='r', newline='') as file:
+            reader = csv.reader(file)
+            for row in reader:
+                if row:
+                    users.append(row)
+    except FileNotFoundError:
+        pass  # Si no existe el archivo, simplemente no se carga nada
+    return users
+
+# Función para guardar usuarios en un archivo CSV
+def save_users_to_csv(users):
+    with open('users.csv', mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerows(users)
+
+def is_valid_email(email):
+    """Función que valida si el email tiene un formato correcto."""
+    email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+    return re.match(email_regex, email) is not None
+
+# Función para agregar un usuario
+def add_user(user_window):
+    # Obtener datos de los campos
+    id_val = validate_positive_number(entry_id.get(), "ID", user_window)
+    name = entry_name.get()
+    email = entry_email.get()
+
+    # Verificar si el ID ya está en uso
+    if any(i[0] == id_val for i in users):  
+        messagebox.showerror("Error", "ID ya en uso, por favor ingrese otro ID.", parent=user_window)
+        clear_fields()
+        return  # Salir de la función si el ID está duplicado
+
+    # Verificar que todos los campos estén llenos
+    if not id_val or not name or not email:
+        messagebox.showerror("Input Error", "All fields must be filled.", parent=user_window)
+        clear_fields()
+        return
+    
+    # Validar formato de correo electrónico
+    if not is_valid_email(email):
+        messagebox.showerror("Email Error", "Please enter a valid email address.", parent=user_window)
+        return
+
+    # Agregar el usuario y guardar los cambios
+    users.append([id_val, name, email])
+    save_users_to_csv(users)
+    load_users()
+    print(users)
+
+    # Limpiar los campos
+    clear_fields()
+
+# Función para editar un usuario
+def edit_user(user_window):
+    selected_item = user_table.selection()
+    if not selected_item:
+        messagebox.showerror("Selection Error", "Please select a user to edit.", parent=user_window)
+        return
+
+    # Obtener datos del usuario seleccionado
+    id_val = validate_positive_number(entry_id.get(), "ID", user_window)
+    name = entry_name.get()
+    email = entry_email.get()
+
+    # Verificar que todos los campos estén llenos
+    if not id_val or not name or not email:
+        messagebox.showerror("Input Error", "All fields must be filled.", parent=user_window)
+        clear_fields()
+        return
+    
+    # Validar formato de correo electrónico
+    if not is_valid_email(email):
+        messagebox.showerror("Email Error", "Please enter a valid email address.", parent=user_window)
+        return
+    
+    # Verificar si el ID ya está en uso (excepto el usuario seleccionado)
+    selected_index = user_table.index(selected_item)  # Obtener el índice del usuario seleccionado
+    if any(i[0] == id_val for i in users if users.index(i) != selected_index):  
+        messagebox.showerror("Error", "ID ya en uso, por favor ingrese otro ID.", parent=user_window)
+        clear_fields()
+        return  # Salir si el ID está duplicado
+
+    # Actualizar el usuario en la lista
+    users[selected_index] = [id_val, name, email]
+    save_users_to_csv(users)
+    load_users()
+    print(users)
+    clear_fields()
 
 
-class BaseDeDatos:
-    """Clase para gestionar los registros de la aplicación."""
-    def __init__(self):
-        self.registros = []  # Lista de diccionarios para almacenar los datos
+# Función para eliminar un usuario
+def delete_user(user_window):
+    selected_item = user_table.selection()
+    if not selected_item:
+        messagebox.showerror("Selection Error", "Please select a user to delete.", parent=user_window)
+        return
 
-    def agregar(self, registro):
-        """Agrega un nuevo registro."""
-        self.registros.append(registro)
+    selected_index = user_table.index(selected_item)
+    users.pop(selected_index)
+    save_users_to_csv(users)
+    load_users()
+    clear_fields()
 
-    def editar(self, indice, registro):
-        """Edita un registro existente."""
-        if 0 <= indice < len(self.registros):
-            self.registros[indice] = registro
+# Función para cargar los usuarios en la tabla
+def load_users():
+    for row in user_table.get_children():
+        user_table.delete(row)
+    for user in users:
+        user_table.insert("", "end", values=user)
 
-    def eliminar(self, indice):
-        """Elimina un registro existente."""
-        if 0 <= indice < len(self.registros):
-            return self.registros.pop(indice)
+# Función para validar número positivo
+def validate_positive_number(value, field_name, user_window):
+    try:
+        value = float(value)
+        if value <= 0:
+            raise ValueError
+        return int(value)
+    except ValueError:
+        messagebox.showerror("Input Error", f"Please enter a valid positive number for {field_name}.", parent=user_window)
         return None
 
+# Función para limpiar los campos de entrada
+def clear_fields():
+    entry_id.delete(0, tk.END)
+    entry_name.delete(0, tk.END)
+    entry_email.delete(0, tk.END)
 
-class AppElectrica:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Aplicación para Cálculos Eléctricos")
-        self.root.geometry("900x700")
-        self.root.configure(bg="#f7f7f7")
+# Función para manejar la selección de los usuarios desde la tabla
+def select_user(event):
+    selected_item = user_table.selection()
+    if selected_item:
+        selected_user = user_table.item(selected_item)
+        entry_id.delete(0, tk.END)
+        entry_name.delete(0, tk.END)
+        entry_email.delete(0, tk.END)
 
-        # Base de datos en memoria
-        self.db = BaseDeDatos()
+        entry_id.insert(0, selected_user['values'][0])
+        entry_name.insert(0, selected_user['values'][1])
+        entry_email.insert(0, selected_user['values'][2])
 
-        # Variables para navegación entre secciones
-        self.seccion_actual = tk.StringVar(value="Datos del Usuario")
+# Ventana de usuarios
+def open_user_window():
+    user_window = tk.Toplevel(root)
+    user_window.title("User Information")
+    user_window.configure(bg="#f2f2f2")
+    user_window.grab_set()
 
-        # Crear interfaz principal
-        self.crear_navegacion()
-        self.crear_secciones()
+    global entry_id, entry_name, entry_email, user_table
 
-    def crear_navegacion(self):
-        """Crea la barra de navegación."""
-        frame_nav = tk.Frame(self.root, bg="#4CAF50", height=50)
-        frame_nav.pack(side="top", fill="x")
+    ttk.Label(user_window, text="ID:").grid(row=0, column=0, padx=10, pady=5, sticky="w")
+    entry_id = ttk.Entry(user_window)
+    entry_id.grid(row=0, column=1, padx=10, pady=5)
 
-        opciones = ["Datos del Usuario", "Cálculos Eléctricos", "Diseño de Circuitos"]
-        self.menu_navegacion = ttk.Combobox(frame_nav, values=opciones, textvariable=self.seccion_actual, state="readonly")
-        self.menu_navegacion.pack(pady=10, padx=20, side="left")
-        self.menu_navegacion.bind("<<ComboboxSelected>>", self.cambiar_seccion)
+    ttk.Label(user_window, text="Name:").grid(row=1, column=0, padx=10, pady=5, sticky="w")
+    entry_name = ttk.Entry(user_window)
+    entry_name.grid(row=1, column=1, padx=10, pady=5)
 
-        tk.Label(frame_nav, text="Seleccione una sección", bg="#4CAF50", fg="white", font=("Helvetica", 12)).pack(pady=10, side="left", padx=10)
+    ttk.Label(user_window, text="Email:").grid(row=2, column=0, padx=10, pady=5, sticky="w")
+    entry_email = ttk.Entry(user_window)
+    entry_email.grid(row=2, column=1, padx=10, pady=5)
 
-    def crear_secciones(self):
-        """Crea las secciones de la aplicación."""
-        # Sección de Datos del Usuario
-        self.frame_datos_usuario = tk.Frame(self.root, bg="#f7f7f7")
-        self.crear_seccion_datos_usuario()
+    ttk.Button(user_window, text="Add User", command=lambda: add_user(user_window)).grid(row=3, column=0, pady=10)
+    ttk.Button(user_window, text="Edit User", command=lambda: edit_user(user_window)).grid(row=3, column=1, pady=10)
 
-        # Sección de Cálculos Eléctricos
-        self.frame_calculos = tk.Frame(self.root, bg="#f7f7f7")
-        self.crear_seccion_calculos_electricos()
+    ttk.Button(user_window, text="Delete User", command=lambda: delete_user(user_window)).grid(row=4, column=0, columnspan=2, pady=10)
 
-        # Sección de Diseño de Circuitos
-        self.frame_circuitos = tk.Frame(self.root, bg="#f7f7f7")
-        self.crear_seccion_circuitos()
+    user_table = ttk.Treeview(user_window, columns=("ID", "Name", "Email"), show="headings", height=8)
+    user_table.heading("ID", text="ID")
+    user_table.heading("Name", text="Name")
+    user_table.heading("Email", text="Email")
+    user_table.grid(row=5, column=0, columnspan=2, padx=10, pady=10)
 
-    def crear_seccion_datos_usuario(self):
-        """Crea la sección de gestión de usuarios."""
-        tk.Label(self.frame_datos_usuario, text="Gestión de Usuarios", font=("Helvetica", 16, "bold"), bg="#f7f7f7", fg="#333").pack(pady=10)
+    user_table.bind("<<TreeviewSelect>>", select_user)
 
-        frame_usuario = tk.LabelFrame(self.frame_datos_usuario, text="Datos del Usuario", bg="#ffffff", font=("Helvetica", 10), padx=10, pady=10)
-        frame_usuario.pack(padx=20, pady=10, fill="x")
+    ttk.Button(user_window, text="Back", command=user_window.destroy).grid(row=6, column=0, columnspan=2, pady=10)
 
-        tk.Label(frame_usuario, text="ID:", font=("Helvetica", 10), bg="#ffffff").grid(row=0, column=0, padx=5, pady=5)
-        self.entry_id = tk.Entry(frame_usuario, font=("Helvetica", 10))
-        self.entry_id.grid(row=0, column=1, padx=5, pady=5)
+    load_users()
 
-        tk.Label(frame_usuario, text="Nombre:", font=("Helvetica", 10), bg="#ffffff").grid(row=1, column=0, padx=5, pady=5)
-        self.entry_nombre = tk.Entry(frame_usuario, font=("Helvetica", 10))
-        self.entry_nombre.grid(row=1, column=1, padx=5, pady=5)
+def extract_value(entry):
+    try:
+        return float(entry.get()) if entry.get() else None
+    except ValueError:
+        return None
 
-        tk.Label(frame_usuario, text="Correo Electrónico:", font=("Helvetica", 10), bg="#ffffff").grid(row=2, column=0, padx=5, pady=5)
-        self.entry_correo = tk.Entry(frame_usuario, font=("Helvetica", 10))
-        self.entry_correo.grid(row=2, column=1, padx=5, pady=5)
+def clear_and_insert(entry, value):
+    if entry:
+        entry.delete(0, tk.END)
+        entry.insert(0, f"{value:.2f}")
 
-        # Botones para acciones
-        frame_botones = tk.Frame(self.frame_datos_usuario, bg="#f7f7f7")
-        frame_botones.pack(pady=10)
+# ----------------------Ley de ohmm--------------------------------------
 
-        self.estilizar_boton(frame_botones, "Agregar Usuario", self.agregar_usuario).pack(side="left", padx=5, pady=5)
-        self.estilizar_boton(frame_botones, "Editar Usuario", self.editar_usuario).pack(side="left", padx=5, pady=5)
-        self.estilizar_boton(frame_botones, "Eliminar Usuario", self.eliminar_usuario).pack(side="left", padx=5, pady=5)
+def calculate_ohm_law(entries, calc_window):
+    """Calcula según la Ley de Ohm utilizando los valores en los campos proporcionados."""
+    entry_voltage, entry_current, entry_resistance = entries
+    v = extract_value(entry_voltage)
+    i = extract_value(entry_current)
+    r = extract_value(entry_resistance)
 
-        # Tabla para mostrar los usuarios
-        frame_tabla = tk.Frame(self.frame_datos_usuario, bg="#ffffff")
-        frame_tabla.pack(padx=20, pady=10, fill="both", expand=True)
+     # Validar que todos los campos estén llenos
+    if not any([v, i, r]):
+        messagebox.showerror("Input Error", "At least two fields must be filled for calculation.", parent=calc_window)
+        return
 
-        self.tree = ttk.Treeview(frame_tabla, columns=("ID", "Nombre", "Correo"), show="headings", height=15)
-        self.tree.heading("ID", text="ID")
-        self.tree.heading("Nombre", text="Nombre")
-        self.tree.heading("Correo", text="Correo Electrónico")
-        self.tree.column("ID", width=100, anchor="center")
-        self.tree.column("Nombre", width=200, anchor="center")
-        self.tree.column("Correo", width=300, anchor="center")
-        self.tree.bind("<Double-1>", self.seleccionar_usuario)
-        self.tree.grid(row=0, column=0, columnspan=2, padx=5, pady=10, sticky="nsew")
+    if sum(1 for x in [v, i, r] if x is not None) != 2:
+        messagebox.showerror("Invalid Calculation", "Exactly two fields must be filled for calculation.", parent=calc_window)
+        return
 
-        # Scrollbar para la tabla
-        scrollbar = ttk.Scrollbar(frame_tabla, orient="vertical", command=self.tree.yview)
-        self.tree.configure(yscrollcommand=scrollbar.set)
-        scrollbar.grid(row=0, column=2, sticky="ns")
+    result = None
+    if v and i and not r:
+        result = v / i
+        clear_and_insert(entry_resistance, result)
+        messagebox.showinfo("Result", f"Resistance (R) = {result} Ω", parent=calc_window)
+    elif v and r and not i:
+        result = v / r
+        clear_and_insert(entry_current, result)
+        messagebox.showinfo("Result", f"Current (I) = {result} A", parent=calc_window)
+    elif i and r and not v:
+        result = i * r
+        clear_and_insert(entry_voltage, result)
+        messagebox.showinfo("Result", f"Voltage (V) = {result} V", parent=calc_window)
 
-    def crear_seccion_calculos_electricos(self):
-        """Crea la sección para cálculos eléctricos."""
-        tk.Label(self.frame_calculos, text="Cálculos Eléctricos", font=("Helvetica", 16, "bold"), bg="#f7f7f7", fg="#333").pack(pady=10)
+def show_ohm_law_fields(calculate_for, calc_window):
+    """Muestra los campos necesarios según la selección del usuario."""
+    calc_window = tk.Toplevel(root)
+    calc_window.title("Ohm's Law Calculation")
+    calc_window.grab_set()
 
-        frame_calculos = tk.LabelFrame(self.frame_calculos, text="Ley de Ohm y Circuitos", bg="#ffffff", font=("Helvetica", 10), padx=10, pady=10)
-        frame_calculos.pack(padx=20, pady=10, fill="x")
+    entry_voltage = None
+    entry_current = None
+    entry_resistance = None
 
-        # Entradas para Corriente, Voltaje y Resistencia
-        tk.Label(frame_calculos, text="Corriente (A):", font=("Helvetica", 10), bg="#ffffff").grid(row=0, column=0, padx=5, pady=5)
-        self.entry_corriente = tk.Entry(frame_calculos, font=("Helvetica", 10))
-        self.entry_corriente.grid(row=0, column=1, padx=5, pady=5)
+    if calculate_for == 'V':
+        label_current = tk.Label(calc_window, text="Current (I):")
+        label_current.grid(row=0, column=0)
+        entry_current = tk.Entry(calc_window)
+        entry_current.grid(row=0, column=1)
 
-        tk.Label(frame_calculos, text="Voltaje (V):", font=("Helvetica", 10), bg="#ffffff").grid(row=1, column=0, padx=5, pady=5)
-        self.entry_voltaje = tk.Entry(frame_calculos, font=("Helvetica", 10))
-        self.entry_voltaje.grid(row=1, column=1, padx=5, pady=5)
+        label_resistance = tk.Label(calc_window, text="Resistance (R):")
+        label_resistance.grid(row=1, column=0)
+        entry_resistance = tk.Entry(calc_window)
+        entry_resistance.grid(row=1, column=1)
 
-        tk.Label(frame_calculos, text="Resistencia (Ω):", font=("Helvetica", 10), bg="#ffffff").grid(row=2, column=0, padx=5, pady=5)
-        self.entry_resistencia = tk.Entry(frame_calculos, font=("Helvetica", 10))
-        self.entry_resistencia.grid(row=2, column=1, padx=5, pady=5)
+    elif calculate_for == 'I':
+        label_voltage = tk.Label(calc_window, text="Voltage (V):")
+        label_voltage.grid(row=0, column=0)
+        entry_voltage = tk.Entry(calc_window)
+        entry_voltage.grid(row=0, column=1)
 
-        # Botones para calcular
-        self.estilizar_boton(frame_calculos, "Calcular Valor Desconocido", self.calcular_desconocido).grid(row=3, column=0, columnspan=2, pady=10)
+        label_resistance = tk.Label(calc_window, text="Resistance (R):")
+        label_resistance.grid(row=1, column=0)
+        entry_resistance = tk.Entry(calc_window)
+        entry_resistance.grid(row=1, column=1)
 
-        # Mostrar resultado
-        self.label_resultado_ohm = tk.Label(self.frame_calculos, text="Resultado: ", font=("Helvetica", 12), bg="#f7f7f7", fg="#555")
-        self.label_resultado_ohm.pack(pady=10)
+    elif calculate_for == 'R':
+        label_voltage = tk.Label(calc_window, text="Voltage (V):")
+        label_voltage.grid(row=0, column=0)
+        entry_voltage = tk.Entry(calc_window)
+        entry_voltage.grid(row=0, column=1)
 
-        # Circuitos en Serie y Paralelo
-        frame_circuitos = tk.LabelFrame(self.frame_calculos, text="Circuitos", bg="#ffffff", font=("Helvetica", 10), padx=10, pady=10)
-        frame_circuitos.pack(padx=20, pady=10, fill="x")
+        label_current = tk.Label(calc_window, text="Current (I):")
+        label_current.grid(row=1, column=0)
+        entry_current = tk.Entry(calc_window)
+        entry_current.grid(row=1, column=1)
 
-        self.estilizar_boton(frame_circuitos, "Resistencia Equivalente (Serie)", self.calcular_serie).grid(row=0, column=0, pady=5)
-        self.estilizar_boton(frame_circuitos, "Resistencia Equivalente (Paralelo)", self.calcular_paralelo).grid(row=0, column=1, pady=5)
+    entries = (entry_voltage, entry_current, entry_resistance)
 
-    def crear_seccion_circuitos(self):
-        """Crea la sección para diseñar circuitos eléctricos simples."""
-        tk.Label(self.frame_circuitos, text="Diseño de Circuitos", font=("Helvetica", 16, "bold"), bg="#f7f7f7", fg="#333").pack(pady=10)
+    button_calculate = tk.Button(calc_window, text="Calculate", command=lambda: calculate_ohm_law(entries, calc_window))
+    button_calculate.grid(row=2, column=0, columnspan=2, pady=5)
 
-        frame_componentes = tk.LabelFrame(self.frame_circuitos, text="Componentes del Circuito", bg="#ffffff", font=("Helvetica", 10), padx=10, pady=10)
-        frame_componentes.pack(padx=20, pady=10, fill="x")
+    button_back = tk.Button(calc_window, text="Back", command=calc_window.destroy)
+    button_back.grid(row=3, column=0, columnspan=2, pady=5)
 
-        tk.Label(frame_componentes, text="Resistencia (Ω):", font=("Helvetica", 10), bg="#ffffff").grid(row=0, column=0, padx=5, pady=5)
-        self.entry_resistencia_circuito = tk.Entry(frame_componentes, font=("Helvetica", 10))
-        self.entry_resistencia_circuito.grid(row=0, column=1, padx=5, pady=5)
+def open_calculations_window():
+    """Muestra una ventana con opciones de cálculo."""
+    calc_window = tk.Toplevel(root)
+    calc_window.title("Choose Calculation")
+    calc_window.grab_set()
 
-        tk.Label(frame_componentes, text="Voltaje (V):", font=("Helvetica", 10), bg="#ffffff").grid(row=1, column=0, padx=5, pady=5)
-        self.entry_voltaje_circuito = tk.Entry(frame_componentes, font=("Helvetica", 10))
-        self.entry_voltaje_circuito.grid(row=1, column=1, padx=5, pady=5)
+    global icon_voltage, icon_current, icon_resistance
 
-        self.estilizar_boton(frame_componentes, "Agregar Componente", self.agregar_componente).grid(row=2, column=0, columnspan=2, pady=10)
+    # Cargar imágenes (asegúrate de que las rutas sean correctas)
+    icon_voltage = PhotoImage(file="v.png")
+    icon_current = PhotoImage(file="i.png")
+    icon_resistance = PhotoImage(file="r.png")
 
-        # Tabla para mostrar los componentes del circuito
-        self.tree_circuito = ttk.Treeview(frame_componentes, columns=("Resistencia", "Voltaje"), show="headings", height=8)
-        self.tree_circuito.heading("Resistencia", text="Resistencia (Ω)")
-        self.tree_circuito.heading("Voltaje", text="Voltaje (V)")
-        self.tree_circuito.column("Resistencia", width=150, anchor="center")
-        self.tree_circuito.column("Voltaje", width=150, anchor="center")
+    button_voltage = tk.Button(calc_window, text="Voltage (V)", image=icon_voltage, compound="top", command=lambda: show_ohm_law_fields('V', calc_window))
+    button_voltage.grid(row=0, column=0, padx=10, pady=10)
 
-        # Ahora usamos `grid` en vez de `pack` para mantener la coherencia
-        self.tree_circuito.grid(row=3, column=0, columnspan=2, padx=5, pady=10, sticky="nsew")
+    button_current = tk.Button(calc_window, text="Current (I)", image=icon_current, compound="top", command=lambda: show_ohm_law_fields('I', calc_window))
+    button_current.grid(row=0, column=1, padx=10, pady=10)
 
-        # Scrollbar para la tabla
-        scrollbar = ttk.Scrollbar(frame_componentes, orient="vertical", command=self.tree_circuito.yview)
-        self.tree_circuito.configure(yscrollcommand=scrollbar.set)
-        scrollbar.grid(row=3, column=2, sticky="ns")
+    button_resistance = tk.Button(calc_window, text="Resistance (R)", image=icon_resistance, compound="top", command=lambda: show_ohm_law_fields('R', calc_window))
+    button_resistance.grid(row=1, column=0, padx=10, pady=10)
 
-    def estilizar_boton(self, parent, texto, comando):
-        """Crea un botón estilizado."""
-        return tk.Button(parent, text=texto, command=comando,
-                         font=("Helvetica", 10), bg="#4CAF50", fg="white",
-                         activebackground="#45a049", activeforeground="white", relief="flat", padx=10, pady=5)
+# ----------------------Circuitos en Serie y Paralelo--------------------------------------
+def calculate_circuits(entries, calc_window, mode):
+    resistances = extract_list_values(entries[:-1])  # Excluir el campo de voltaje
 
-    def agregar_usuario(self):
-        """Agrega un nuevo usuario a la tabla."""
-        if not self.validar_datos_usuario():
+    if not resistances:
+        messagebox.showerror("Input Error", "At least one resistance must be provided.", parent=calc_window)
+        return
+
+    if mode == 'serie':
+        equivalent_resistance = sum(resistances)
+    elif mode == 'paralelo':
+        try:
+            equivalent_resistance = 1 / sum(1 / r for r in resistances)
+        except ZeroDivisionError:
+            messagebox.showerror("Error", "Resistance cannot be zero in parallel circuits.", parent=calc_window)
             return
 
-        nuevo_usuario = {
-            "ID": self.entry_id.get().strip(),
-            "Nombre": self.entry_nombre.get().strip(),
-            "Correo": self.entry_correo.get().strip(),
-        }
-        # Agregar a la base de datos
-        self.db.agregar(nuevo_usuario)
+    voltage = extract_value(entries[-1]) or 0  # Campo de voltaje, usar 0 si está vacío
+    total_current = voltage / equivalent_resistance
 
-        # Agregar a la tabla visual
-        self.tree.insert("", "end", values=(nuevo_usuario["ID"], nuevo_usuario["Nombre"], nuevo_usuario["Correo"]))
+    messagebox.showinfo(
+        "Result",
+        f"Equivalent Resistance = {equivalent_resistance:.2f} Ω\nVoltage = {voltage:.2f} V\nTotal Current = {total_current:.2f} A",
+        parent=calc_window
+    )
 
-        # Limpiar los campos de entrada
-        self.limpiar_campos_usuario()
+# ----------------------Diseño de Circuitos--------------------------------------
+def show_circuit_fields(mode, calc_window):
+    calc_window = tk.Toplevel(root)
+    calc_window.title(f"Circuit Calculation ({mode.capitalize()})")
+    calc_window.grab_set()
 
-    def editar_usuario(self):
-        """Edita el usuario seleccionado en la tabla."""
-        seleccion = self.tree.selection()
-        if not seleccion:
-            messagebox.showerror("Error", "Por favor, selecciona un usuario para editar.")
-            return
+    entries = []
 
-        # Obtener el índice y los datos seleccionados
-        item = self.tree.item(seleccion[0])
-        indice = self.tree.index(seleccion[0])
+    def update_widgets():
+        for widget in calc_window.winfo_children():
+            if isinstance(widget, tk.Label):  # Sólo destruir etiquetas
+                widget.destroy()
 
-        if not self.validar_datos_usuario():
-            return
+        # Reorganizar los campos dinámicamente
+        for idx, entry in enumerate(entries[:-1]):
+            tk.Label(calc_window, text=f"Resistance (R) {idx + 1}:").grid(row=idx, column=0, pady=5)
+            entry.grid(row=idx, column=1, pady=5)
 
-        usuario_actualizado = {
-            "ID": self.entry_id.get().strip(),
-            "Nombre": self.entry_nombre.get().strip(),
-            "Correo": self.entry_correo.get().strip(),
-        }
+        # Campo de voltaje siempre al final
+        tk.Label(calc_window, text="Voltage (V):").grid(row=len(entries) - 1, column=0, pady=5)
+        entries[-1].grid(row=len(entries) - 1, column=1, pady=5)
 
-        # Actualizar la base de datos
-        self.db.editar(indice, usuario_actualizado)
+        # Botones
+        button_add.grid(row=len(entries), column=0, columnspan=2, pady=5)
+        button_calculate.grid(row=len(entries) + 1, column=0, columnspan=2, pady=10)
+        button_back.grid(row=len(entries) + 2, column=0, columnspan=2, pady=5)
 
-        # Actualizar en la tabla
-        self.tree.item(seleccion[0], values=(usuario_actualizado["ID"], usuario_actualizado["Nombre"], usuario_actualizado["Correo"]))
-
-        # Limpiar los campos de entrada
-        self.limpiar_campos_usuario()
-
-    def eliminar_usuario(self):
-        """Elimina el usuario seleccionado de la tabla."""
-        seleccion = self.tree.selection()
-        if not seleccion:
-            messagebox.showerror("Error", "Por favor, selecciona un usuario para eliminar.")
-            return
-
-        # Obtener el índice seleccionado
-        indice = self.tree.index(seleccion[0])
-
-        # Eliminar de la base de datos
-        eliminado = self.db.eliminar(indice)
-        if eliminado:
-            # Eliminar de la tabla
-            self.tree.delete(seleccion[0])
-            messagebox.showinfo("Éxito", f"Usuario eliminado: {eliminado['Nombre']}")
-        else:
-            messagebox.showerror("Error", "No se pudo eliminar el usuario.")
-
-        # Limpiar los campos de entrada
-        self.limpiar_campos_usuario()
-
-    def seleccionar_usuario(self, event):
-        """Llena los campos con el usuario seleccionado en la tabla."""
-        seleccion = self.tree.selection()
-        if seleccion:
-            item = self.tree.item(seleccion[0])
-            valores = item["values"]
-            self.entry_id.delete(0, tk.END)
-            self.entry_id.insert(0, valores[0])
-            self.entry_nombre.delete(0, tk.END)
-            self.entry_nombre.insert(0, valores[1])
-            self.entry_correo.delete(0, tk.END)
-            self.entry_correo.insert(0, valores[2])
-
-    def limpiar_campos_usuario(self):
-        """Limpia los campos de entrada."""
-        self.entry_id.delete(0, tk.END)
-        self.entry_nombre.delete(0, tk.END)
-        self.entry_correo.delete(0, tk.END)
-
-    def validar_datos_usuario(self):
-        """Valida que los datos del usuario sean correctos."""
-        if not self.entry_id.get().strip():
-            messagebox.showerror("Error", "El ID no puede estar vacío.")
-            return False
-        if not self.entry_nombre.get().strip():
-            messagebox.showerror("Error", "El Nombre no puede estar vacío.")
-            return False
-        if not self.entry_correo.get().strip():
-            messagebox.showerror("Error", "El Correo no puede estar vacío.")
-            return False
-        return True
-
-    def calcular_desconocido(self):
-        """Calcula el valor desconocido usando la Ley de Ohm."""
-        try:
-            corriente = self.entry_corriente.get()
-            voltaje = self.entry_voltaje.get()
-            resistencia = self.entry_resistencia.get()
-
-            # Determinamos cuál valor falta
-            if corriente == "":
-                corriente = float(voltaje) / float(resistencia)
-                self.entry_corriente.insert(0, f"{corriente:.2f}")
-                self.label_resultado_ohm.config(text=f"Resultado: Corriente = {corriente:.2f} A")
-            elif voltaje == "":
-                voltaje = float(corriente) * float(resistencia)
-                self.entry_voltaje.insert(0, f"{voltaje:.2f}")
-                self.label_resultado_ohm.config(text=f"Resultado: Voltaje = {voltaje:.2f} V")
-            elif resistencia == "":
-                resistencia = float(voltaje) / float(corriente)
-                self.entry_resistencia.insert(0, f"{resistencia:.2f}")
-                self.label_resultado_ohm.config(text=f"Resultado: Resistencia = {resistencia:.2f} Ω")
-        except ValueError:
-            messagebox.showerror("Error", "Por favor, ingresa valores válidos para los cálculos.")
-
-    def calcular_serie(self):
-        """Calcula la resistencia equivalente en un circuito en serie."""
-        try:
-            resistencias = [float(r) for r in self.entry_resistencia_circuito.get().split(",")]
-            resistencia_eq = sum(resistencias)
-            self.label_resultado_ohm.config(text=f"Resistencia Equivalente (Serie): {resistencia_eq:.2f} Ω")
-        except ValueError:
-            messagebox.showerror("Error", "Por favor, ingresa las resistencias separadas por comas.")
-
-    def calcular_paralelo(self):
-        """Calcula la resistencia equivalente en un circuito en paralelo."""
-        try:
-            resistencias = [float(r) for r in self.entry_resistencia_circuito.get().split(",")]
-            resistencia_eq = 1 / sum(1 / r for r in resistencias)
-            self.label_resultado_ohm.config(text=f"Resistencia Equivalente (Paralelo): {resistencia_eq:.2f} Ω")
-        except ValueError:
-            messagebox.showerror("Error", "Por favor, ingresa las resistencias separadas por comas.")
-
-    def agregar_componente(self):
-        """Agrega un componente al circuito."""
-        try:
-            resistencia = float(self.entry_resistencia_circuito.get())
-            voltaje = float(self.entry_voltaje_circuito.get())
-
-            # Agregar el componente a la tabla
-            self.tree_circuito.insert("", "end", values=(resistencia, voltaje))
-
-            # Limpiar los campos de entrada para el siguiente componente
-            self.entry_resistencia_circuito.delete(0, tk.END)
-            self.entry_voltaje_circuito.delete(0, tk.END)
-        except ValueError:
-            messagebox.showerror("Error", "Por favor, ingresa valores válidos para la resistencia y voltaje.")
-
-    def cambiar_seccion(self, event):
-        """Cambia entre las secciones según lo seleccionado en la lista desplegable."""
-        seccion = self.seccion_actual.get()
-
-        # Ocultar todas las secciones
-        self.frame_datos_usuario.pack_forget()
-        self.frame_calculos.pack_forget()
-        self.frame_circuitos.pack_forget()
-
-        # Mostrar la sección seleccionada
-        if seccion == "Datos del Usuario":
-            self.frame_datos_usuario.pack(fill="both", expand=True)
-        elif seccion == "Cálculos Eléctricos":
-            self.frame_calculos.pack(fill="both", expand=True)
-        elif seccion == "Diseño de Circuitos":
-            self.frame_circuitos.pack(fill="both", expand=True)
+        # Ajustar tamaño de la ventana
+        calc_window.update_idletasks()
+        calc_window.geometry(f"{calc_window.winfo_reqwidth()}x{calc_window.winfo_reqheight()}")
 
 
-# Crear la ventana principal y ejecutar la aplicación
+    def add_resistance_field():
+        entry = tk.Entry(calc_window)
+        entries.insert(-1, entry)  # Insertar antes del campo de voltaje
+        update_widgets()
+
+    # Inicializar los campos
+    entry_r1 = tk.Entry(calc_window)
+    entry_r2 = tk.Entry(calc_window)
+    entry_voltage = tk.Entry(calc_window)
+    entries.extend([entry_r1, entry_r2, entry_voltage])
+
+    button_add = tk.Button(calc_window, text="Add Resistance", command=add_resistance_field)
+    button_calculate = tk.Button(calc_window, text="Calculate", command=lambda: calculate_circuits(entries, calc_window, mode))
+    button_back = tk.Button(calc_window, text="Back", command=calc_window.destroy)
+
+    update_widgets()
+
+# ----------------------Ventanas de Opciones--------------------------------------
+def open_circuit_design_window():
+    circuit_window = tk.Toplevel(root)
+    circuit_window.title("Circuit Design Options")
+    circuit_window.grab_set()
+
+    button_serie = tk.Button(circuit_window, text="Series Circuit", command=lambda: show_circuit_fields('serie', circuit_window))
+    button_serie.grid(row=0, column=0, padx=10, pady=10)
+
+    button_parallel = tk.Button(circuit_window, text="Parallel Circuit", command=lambda: show_circuit_fields('paralelo', circuit_window))
+    button_parallel.grid(row=0, column=1, padx=10, pady=10)
+
+def extract_list_values(entries):
+    return [extract_value(entry) for entry in entries if entry.get()]
+
+def extract_value(entry):
+    """Extrae un valor flotante de un campo de entrada."""
+    try:
+        return float(entry.get()) if entry and entry.get() else None
+    except ValueError:
+        return None
+
+def clear_and_insert(entry, value):
+    """Limpia el campo de entrada y escribe un nuevo valor."""
+    if entry:
+        entry.delete(0, tk.END)
+        entry.insert(0, value)
+
+# Ventana principal
 root = tk.Tk()
-app = AppElectrica(root)
+root.title("Electrical Application")
+root.configure(bg="#e6e6e6")
+
+ttk.Label(root, text="Select an option to continue:", font=("Arial", 14)).grid(row=0, column=0, padx=20, pady=10)
+
+menu = ttk.Combobox(root, values=["User Information", "Electrical Calculations", "Circuit Design"], state="readonly")
+menu.grid(row=1, column=0, padx=20, pady=10)
+
+def navigate_menu():
+    if menu.get() == "User Information":
+        open_user_window()
+    elif menu.get() == "Electrical Calculations":
+        open_calculations_window()
+    elif menu.get() == "Circuit Design":
+        open_circuit_design_window()
+
+ttk.Button(root, text="Go", command=navigate_menu).grid(row=2, column=0, pady=10)
+
 root.mainloop()
+
+#ULTIMA ACTUALIZACIÓN
