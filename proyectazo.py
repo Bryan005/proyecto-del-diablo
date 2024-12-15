@@ -61,6 +61,22 @@ def add_user(user_window):
     # Limpiar los campos
     clear_fields()
 
+# Función para centrar la ventana
+def centrar(ventana):
+
+    ventana.update_idletasks()
+
+    # Obtener el tamaño de la pantalla
+    ancho = ventana.winfo_reqwidth()
+    alto = ventana.winfo_reqheight()
+
+    # Calcular las coordenadas x, y
+    x = (ventana.winfo_screenwidth() // 2) - (ancho // 2)
+    y = (ventana.winfo_screenheight() // 2) - (alto // 2)
+
+    # Configurar la geometría de la ventana
+    ventana.geometry(f"{ancho}x{alto}+{x}+{y}")
+
 # Función para editar un usuario
 def edit_user(user_window):
     selected_item = user_table.selection()
@@ -187,6 +203,8 @@ def open_user_window():
 
     load_users()
 
+    centrar(user_window)
+
 def extract_value(entry):
     try:
         return float(entry.get()) if entry.get() else None
@@ -281,6 +299,8 @@ def show_ohm_law_fields(calculate_for, calc_window):
     button_back = tk.Button(calc_window, text="Back", command=calc_window.destroy)
     button_back.grid(row=3, column=0, columnspan=2, pady=5)
 
+    centrar(calc_window)
+
 def open_calculations_window():
     """Muestra una ventana con opciones de cálculo."""
     calc_window = tk.Toplevel(root)
@@ -302,6 +322,8 @@ def open_calculations_window():
 
     button_resistance = tk.Button(calc_window, text="Resistance (R)", image=icon_resistance, compound="top", command=lambda: show_ohm_law_fields('R', calc_window))
     button_resistance.grid(row=1, column=0, padx=10, pady=10)
+
+    centrar(calc_window)
 
 # ----------------------Circuitos en Serie y Paralelo--------------------------------------
 def calculate_circuits(entries, calc_window, mode):
@@ -378,6 +400,8 @@ def show_circuit_fields(mode, calc_window):
 
     update_widgets()
 
+    centrar(calc_window)
+
 # ----------------------Ventanas de Opciones--------------------------------------
 def open_circuit_design_window():
     circuit_window = tk.Toplevel(root)
@@ -389,6 +413,8 @@ def open_circuit_design_window():
 
     button_parallel = tk.Button(circuit_window, text="Parallel Circuit", command=lambda: show_circuit_fields('paralelo', circuit_window))
     button_parallel.grid(row=0, column=1, padx=10, pady=10)
+
+    centrar(circuit_window)
 
 def extract_list_values(entries):
     return [extract_value(entry) for entry in entries if entry.get()]
@@ -425,6 +451,8 @@ def navigate_menu():
         open_circuit_design_window()
 
 ttk.Button(root, text="Go", command=navigate_menu).grid(row=2, column=0, pady=10)
+
+centrar(root)
 
 root.mainloop()
 
