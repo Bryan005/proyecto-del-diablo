@@ -290,9 +290,9 @@ def open_calculations_window():
     global icon_voltage, icon_current, icon_resistance
 
     # Cargar imágenes (asegúrate de que las rutas sean correctas)
-    icon_voltage = PhotoImage(file="v.png")
-    icon_current = PhotoImage(file="i.png")
-    icon_resistance = PhotoImage(file="r.png")
+    icon_voltage = PhotoImage(file="imgs/v.png")
+    icon_current = PhotoImage(file="imgs/i.png")
+    icon_resistance = PhotoImage(file="imgs/r.png")
 
     button_voltage = tk.Button(calc_window, text="Voltage (V)", image=icon_voltage, compound="top", command=lambda: show_ohm_law_fields('V', calc_window))
     button_voltage.grid(row=0, column=0, padx=10, pady=10)
