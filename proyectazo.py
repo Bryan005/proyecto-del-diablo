@@ -1,27 +1,9 @@
 import tkinter as tk
 from tkinter import simpledialog, messagebox, ttk
 from tkinter import PhotoImage
-import csv, re
+import re
 
 users = []
-
-# Función para leer usuarios desde un archivo CSV
-def load_users_from_csv():
-    try:
-        with open('users.csv', mode='r', newline='') as file:
-            reader = csv.reader(file)
-            for row in reader:
-                if row:
-                    users.append(row)
-    except FileNotFoundError:
-        pass  # Si no existe el archivo, simplemente no se carga nada
-    return users
-
-# Función para guardar usuarios en un archivo CSV
-def save_users_to_csv(users):
-    with open('users.csv', mode='w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerows(users)
 
 def is_valid_email(email):
     """Función que valida si el email tiene un formato correcto."""
@@ -54,7 +36,6 @@ def add_user(user_window):
 
     # Agregar el usuario y guardar los cambios
     users.append([id_val, name, email])
-    save_users_to_csv(users)
     load_users()
 
     # Limpiar los campos
@@ -105,7 +86,6 @@ def edit_user(user_window):
     user_table.item(selected_item[0], values=(id_val, name, email))
 
     # Guardar y recargar
-    save_users_to_csv(users)
     load_users()  # Asegúrate de que esta función actualice el Treeview
     clear_fields()
     messagebox.showinfo("Éxito", "Usuario actualizado correctamente!", parent=user_window)
@@ -120,7 +100,6 @@ def delete_user(user_window):
 
     selected_index = user_table.index(selected_item)
     users.pop(selected_index)
-    save_users_to_csv(users)
     load_users()
     clear_fields()
 
