@@ -32,24 +32,24 @@ def is_valid_email(email):
 def add_user(user_window):
     # Obtener datos de los campos
     id_val = validate_positive_number(entry_id.get(), "ID", user_window)
-    name = entry_name.get()
+    name = entry_name.get().title()
     email = entry_email.get()
 
     # Verificar si el ID ya está en uso
     if any(i[0] == id_val for i in users):  
-        messagebox.showerror("Error", "ID ya en uso, por favor ingrese otro ID.", parent=user_window)
+        messagebox.showerror("ID Error", "ID ya en uso, por favor ingrese otro ID.", parent=user_window)
         clear_fields()
         return  # Salir de la función si el ID está duplicado
 
     # Verificar que todos los campos estén llenos
     if not id_val or not name or not email:
-        messagebox.showerror("Input Error", "All fields must be filled.", parent=user_window)
+        messagebox.showerror("Input Error", "Todos los campos deben estar llenos.", parent=user_window)
         clear_fields()
         return
     
     # Validar formato de correo electrónico
     if not is_valid_email(email):
-        messagebox.showerror("Email Error", "Please enter a valid email address.", parent=user_window)
+        messagebox.showerror("Email Error", "Por favor ingrese una dirección de email valida.", parent=user_window)
         return
 
     # Agregar el usuario y guardar los cambios
@@ -69,47 +69,53 @@ def centrar(ventana):
     y = (ventana.winfo_screenheight() // 2) - (alto // 2)
     ventana.geometry(f"{ancho}x{alto}+{x}+{y}")
 
-# Función para editar un usuario
 def edit_user(user_window):
     selected_item = user_table.selection()
     if not selected_item:
-        messagebox.showerror("Selection Error", "Please select a user to edit.", parent=user_window)
+        messagebox.showerror("Selection Error", "Por favor seleeciona un usuario para editar.", parent=user_window)
         return
 
     # Obtener datos del usuario seleccionado
     id_val = validate_positive_number(entry_id.get(), "ID", user_window)
-    name = entry_name.get()
+    name = entry_name.get().title()
     email = entry_email.get()
 
     # Verificar que todos los campos estén llenos
     if not id_val or not name or not email:
-        messagebox.showerror("Input Error", "All fields must be filled.", parent=user_window)
+        messagebox.showerror("Input Error", "Todos los campos deben estar llenos.", parent=user_window)
         clear_fields()
         return
     
     # Validar formato de correo electrónico
     if not is_valid_email(email):
-        messagebox.showerror("Email Error", "Please enter a valid email address.", parent=user_window)
+        messagebox.showerror("Email Error", "Por favor ingrese una dirección de email valida.", parent=user_window)
         return
-    
-    # Verificar si el ID ya está en uso (excepto el usuario seleccionado)
-    selected_index = user_table.index(selected_item)  # Obtener el índice del usuario seleccionado
-    if any(i[0] == id_val for i in users if users.index(i) != selected_index):  
-        messagebox.showerror("Error", "ID ya en uso, por favor ingrese otro ID.", parent=user_window)
-        clear_fields()
-        return  # Salir si el ID está duplicado
 
-    # Actualizar el usuario en la lista users[selected_index] = [id_val, name, email]
+    # Verificar si el ID ya está en uso (excepto el usuario seleccionado)
+    selected_index = user_table.index(selected_item[0])  # Obtener el índice del usuario seleccionado
+    if any(i[0] == id_val for i in users if users.index(i) != selected_index):
+        messagebox.showerror("Error", "ID en uso, por favor ingrese un ID diferente.", parent=user_window)
+        clear_fields()
+        return
+     
+    # Actualizar el usuario en la lista
+    users[selected_index] = [id_val, name, email]
+
+    # Actualizar el Treeview
+    user_table.item(selected_item[0], values=(id_val, name, email))
+
+    # Guardar y recargar
     save_users_to_csv(users)
-    load_users()
-    print(users)
+    load_users()  # Asegúrate de que esta función actualice el Treeview
     clear_fields()
+    messagebox.showinfo("Éxito", "Usuario actualizado correctamente!", parent=user_window)
+
 
 # Función para eliminar un usuario
 def delete_user(user_window):
     selected_item = user_table.selection()
     if not selected_item:
-        messagebox.showerror("Selection Error", "Please select a user to delete.", parent=user_window)
+        messagebox.showerror("Selection Error", "Por favor selecciona un usuario para eliminar.", parent=user_window)
         return
 
     selected_index = user_table.index(selected_item)
@@ -120,10 +126,14 @@ def delete_user(user_window):
 
 # Función para cargar los usuarios en la tabla
 def load_users():
-    for row in user_table.get_children():
-        user_table.delete(row)
+    # Limpiar el Treeview
+    for item in user_table.get_children():
+        user_table.delete(item)
+    
+    # Cargar datos desde la lista users
     for user in users:
         user_table.insert("", "end", values=user)
+
 
 # Función para validar número positivo
 def validate_positive_number(value, field_name, user_window):
@@ -133,7 +143,7 @@ def validate_positive_number(value, field_name, user_window):
             raise ValueError
         return int(value)
     except ValueError:
-        messagebox.showerror("Input Error", f"Please enter a valid positive number for {field_name}.", parent=user_window)
+        messagebox.showerror("Input Error", f"Por favor ingresa un número positivo valido para {field_name}.", parent=user_window)
         return None
 
 # Función para limpiar los campos de entrada
@@ -155,46 +165,69 @@ def select_user(event):
         entry_name.insert(0, selected_user['values'][1])
         entry_email.insert(0, selected_user['values'][2])
 
-# Ventana de usuarios
 def open_user_window():
     user_window = tk.Toplevel(root)
-    user_window.title("User  Information")
+    user_window.title("Usuarios")
     user_window.configure(bg="#add8e6")  # Color celeste
     user_window.grab_set()
-
+    user_window.resizable(False, False)
+    
     global entry_id, entry_name, entry_email, user_table
 
-    # Etiquetas
-    ttk.Label(user_window, text="ID:", background="#add8e6").grid(row=0, column=0, padx=10, pady=5, sticky="w")
+    # Etiquetas y entradas
+    ttk.Label(user_window, text="ID:", background="#add8e6", font=("Arial", 10, "bold"))\
+        .grid(row=0, column=0, padx=10, pady=5, sticky="w")
     entry_id = ttk.Entry(user_window)
-    entry_id.grid(row=0, column=1, padx=10, pady=5)
+    entry_id.grid(row=0, column=1, padx=10, pady=5, sticky="e")
 
-    ttk.Label(user_window, text="Name:", background="#add8e6").grid(row=1, column=0, padx=10, pady=5, sticky="w")
+    ttk.Label(user_window, text="Nombre:", background="#add8e6", font=("Arial", 10, "bold"))\
+        .grid(row=1, column=0, padx=10, pady=5, sticky="w")
     entry_name = ttk.Entry(user_window)
-    entry_name.grid(row=1, column=1, padx=10, pady=5)
+    entry_name.grid(row=1, column=1, padx=10, pady=5, sticky="e")
 
-    ttk.Label(user_window, text="Email:", background="#add8e6").grid(row=2, column=0, padx=10, pady=5, sticky="w")
+    ttk.Label(user_window, text="Email:", background="#add8e6", font=("Arial", 10, "bold"))\
+        .grid(row=2, column=0, padx=10, pady=5, sticky="w")
     entry_email = ttk.Entry(user_window)
-    entry_email.grid(row=2, column=1, padx=10, pady=5)
+    entry_email.grid(row=2, column=1, padx=10, pady=5, sticky="e")
 
-    # Definir el estilo de los botones
+    # Estilo de los botones
     style = ttk.Style()
-    style.configure('TButton', background='#FF8C00', foreground='#000000', font=('Arial', 10, 'bold'))  # Naranja oscuro con texto negro
+    style.configure('TButton', font=('Arial', 10, 'bold'))
+    style.configure('Delete.TButton', background='#e60902', font=('Arial', 10, 'bold')) 
+    style.configure('Custom.TFrame', background="#add8e6")
 
-    # Botones
-    ttk.Button(user_window, text="Add User", command=lambda: add_user(user_window), style='TButton').grid(row=3, column=0, pady=10)
-    ttk.Button(user_window, text="Edit User", command=lambda: edit_user(user_window), style='TButton').grid(row=3, column=1, pady=10)
-    ttk.Button(user_window, text="Delete User", command=lambda: delete_user(user_window), style='TButton').grid(row=4, column=0, columnspan=2, pady=10)
+    # Crear un frame para los botones
+    button_frame = ttk.Frame(user_window, style='Custom.TFrame')
+    button_frame.grid(row=3, column=0, columnspan=2, pady=10)
 
+    # Botones dentro del frame
+    ttk.Button(button_frame, text="Agregar", command=lambda: add_user(user_window), style='TButton')\
+        .pack(side="left", padx=5, pady=5)
+    ttk.Button(button_frame, text="Editar", command=lambda: edit_user(user_window), style='TButton')\
+        .pack(side="left", padx=5, pady=5)
+    ttk.Button(button_frame, text="Eliminar", command=lambda: delete_user(user_window), style='Delete.TButton')\
+        .pack(side="left", padx=5, pady=5)
+
+
+    # Tabla de usuarios
     user_table = ttk.Treeview(user_window, columns=("ID", "Name", "Email"), show="headings", height=8)
     user_table.heading("ID", text="ID")
-    user_table.heading("Name", text="Name")
+    user_table.heading("Name", text="Nombre")
     user_table.heading("Email", text="Email")
-    user_table.grid(row=5, column=0, columnspan=2, padx=10, pady=10)
-
+    user_table.column("ID", width=50)
+    user_table.column("Name", width=150)
+    user_table.column("Email", width=200)
+    user_table.grid(row=5, column=0, columnspan=2, padx=10, pady=10, sticky="nsew")
     user_table.bind("<<TreeviewSelect>>", select_user)
 
-    ttk.Button(user_window, text="Back", command=user_window.destroy, style='TButton').grid(row=6, column=0, columnspan=2, pady=10)
+    # Botón de retroceso
+    ttk.Button(user_window, text="Atrás", command=user_window.destroy, style='TButton')\
+        .grid(row=6, column=0, columnspan=2, pady=10)
+
+    # Configurar proporciones
+    user_window.columnconfigure(0, weight=1)
+    user_window.columnconfigure(1, weight=1)
+    user_window.rowconfigure(5, weight=1)  # La fila de la tabla es la única que se expande
 
     load_users()
     centrar(user_window)
@@ -221,87 +254,102 @@ def calculate_ohm_law(entries, calc_window):
 
     # Validar que todos los campos estén llenos
     if not any([v, i, r]):
-        messagebox.showerror("Input Error", "At least two fields must be filled for calculation.", parent=calc_window)
+        messagebox.showerror("Input Error", "Al menos dos campos deben estar llenos para realizar el cálculo.", parent=calc_window)
         return
 
     if sum(1 for x in [v, i, r] if x is not None) != 2:
-        messagebox.showerror("Invalid Calculation", "Exactly two fields must be filled for calculation.", parent=calc_window)
+        messagebox.showerror("Invalid Calculation", "Exactamente dos campos deben estar llenos para realizar el cálculo.", parent=calc_window)
         return
 
     result = None
     if v and i and not r:
         result = v / i
         clear_and_insert(entry_resistance, result)
-        messagebox.showinfo("Result", f"Resistance (R) = {result} Ω", parent=calc_window)
+        messagebox.showinfo("Resultado", f"Resistencia (R) = {result} Ω", parent=calc_window)
     elif v and r and not i:
         result = v / r
         clear_and_insert(entry_current, result)
-        messagebox.showinfo("Result", f"Current (I) = {result} A", parent=calc_window)
+        messagebox.showinfo("Resultado", f"Corriente (I) = {result} A", parent=calc_window)
     elif i and r and not v:
         result = i * r
         clear_and_insert(entry_voltage, result)
-        messagebox.showinfo("Result", f"Voltage (V) = {result} V", parent=calc_window)
+        messagebox.showinfo("Resultado", f"Voltaje (V) = {result} V", parent=calc_window)
 
 def show_ohm_law_fields(calculate_for, calc_window):
+    # Estilo de los botones
+    style = ttk.Style()
+    style.configure('TButton', font=('Arial', 10, 'bold'))
+    style.configure('Delete.TButton', background='#e60902', font=('Arial', 10, 'bold')) 
+    style.configure('Custom.TFrame', background="#add8e6")
+
     """Muestra los campos necesarios según la selección del usuario."""
     calc_window = tk.Toplevel(root)
-    calc_window.title("Ohm's Law Calculation")
+    calc_window.title("Calculadora Ley de Ohm")
     calc_window.configure(bg="#add8e6")  # Color celeste
     calc_window.grab_set()
+    calc_window.resizable(False, False)
 
     entry_voltage = None
     entry_current = None
     entry_resistance = None
 
     if calculate_for == 'V':
-        label_current = tk.Label(calc_window, text="Current (I):", background="#add8e6")
-        label_current.grid(row=0, column=0)
+        label_current = tk.Label(calc_window, text="Corriente (I):", background="#add8e6")
+        label_current.grid(row=0, column=0, padx=10, pady=5, sticky="w")
         entry_current = tk.Entry(calc_window)
-        entry_current.grid(row=0, column=1)
+        entry_current.grid(row=0, column=1, padx=10, pady=5, sticky="e")
 
-        label_resistance = tk.Label(calc_window, text="Resistance (R):", background="#add8e6")
-        label_resistance.grid(row=1, column=0)
+        label_resistance = tk.Label(calc_window, text="Resistencia (R):", background="#add8e6")
+        label_resistance.grid(row=1, column=0, padx=10, pady=5, sticky="w")
         entry_resistance = tk.Entry(calc_window)
-        entry_resistance.grid(row=1, column=1)
+        entry_resistance.grid(row=1, column=1, padx=10, pady=5, sticky="e")
 
     elif calculate_for == 'I':
-        label_voltage = tk.Label(calc_window, text="Voltage (V):", background="#add8e6")
-        label_voltage.grid(row=0, column=0)
+        label_voltage = tk.Label(calc_window, text="Voltaje (V):", background="#add8e6")
+        label_voltage.grid(row=0, column=0, padx=10, pady=5, sticky="w")
         entry_voltage = tk.Entry(calc_window)
-        entry_voltage.grid(row=0, column=1)
+        entry_voltage.grid(row=0, column=1, padx=10, pady=5, sticky="e")
 
-        label_resistance = tk.Label(calc_window, text="Resistance (R):", background="#add8e6")
-        label_resistance.grid(row=1, column=0)
+        label_resistance = tk.Label(calc_window, text="Resistencia (R):", background="#add8e6")
+        label_resistance.grid(row=1, column=0, padx=10, pady=5, sticky="w")
         entry_resistance = tk.Entry(calc_window)
-        entry_resistance.grid(row=1, column=1)
+        entry_resistance.grid(row=1, column=1, padx=10, pady=5, sticky="e")
 
     elif calculate_for == 'R':
-        label_voltage = tk.Label(calc_window, text="Voltage (V):", background="#add8e6")
-        label_voltage.grid(row=0, column=0)
+        label_voltage = tk.Label(calc_window, text="Voltaje (V):", background="#add8e6")
+        label_voltage.grid(row=0, column=0, padx=10, pady=5, sticky="w")
         entry_voltage = tk.Entry(calc_window)
-        entry_voltage.grid(row=0, column=1)
+        entry_voltage.grid(row=0, column=1, padx=10, pady=5, sticky="e")
 
-        label_current = tk.Label(calc_window, text="Current (I):", background="#add8e6")
-        label_current.grid(row=1, column=0)
+        label_current = tk.Label(calc_window, text="Corriente (I):", background="#add8e6")
+        label_current.grid(row=1, column=0, padx=10, pady=5, sticky="w")
         entry_current = tk.Entry(calc_window)
-        entry_current.grid(row=1, column=1)
+        entry_current.grid(row=1, column=1, padx=10, pady=5, sticky="e")
 
     entries = (entry_voltage, entry_current, entry_resistance)
 
-    button_calculate = tk.Button(calc_window, text="Calculate", command=lambda: calculate_ohm_law(entries, calc_window))
-    button_calculate.grid(row=2, column=0, columnspan=2, pady=5)
+    button_calculate = ttk.Button(calc_window, text="Calcular", command=lambda: calculate_ohm_law(entries, calc_window), style='TButton')
+    button_calculate.grid(row=2, column=0, columnspan=2, padx=10, pady=10, sticky="w")
 
-    button_back = tk.Button(calc_window, text="Back", command=calc_window.destroy)
-    button_back.grid(row=3, column=0, columnspan=2, pady=5)
+    ttk.Button(calc_window, text="Atrás", command=calc_window.destroy, style='Delete.TButton').grid(row=2, column=1, columnspan=2, padx=10, pady=10, sticky="e")
 
     centrar(calc_window)
 
+
 def open_calculations_window():
+
+    # Estilo de los botones
+    style = ttk.Style()
+    style.configure('TButton', font=('Arial', 10, 'bold'))
+    style.configure('Delete.TButton', background='#e60902', font=('Arial', 10, 'bold')) 
+    style.configure('Custom.TFrame', background="#add8e6")
+
     """Muestra una ventana con opciones de cálculo."""
     calc_window = tk.Toplevel(root)
-    calc_window.title("Choose Calculation")
+    calc_window.title("Elegir cálculo")
     calc_window.configure(bg="#add8e6")  # Color celeste
     calc_window.grab_set()
+    calc_window.resizable(False, False)
 
     global icon_voltage, icon_current, icon_resistance, icon_others
 
@@ -311,26 +359,35 @@ def open_calculations_window():
     icon_resistance = PhotoImage(file="imgs/r.png")
     icon_others = PhotoImage(file="imgs/c.png")
 
-    button_voltage = tk.Button(calc_window, text="Voltage (V)", image=icon_voltage, compound="top", command=lambda: show_ohm_law_fields('V', calc_window))
+    # Crear los botones con fondo transparente
+    button_voltage = tk.Button(calc_window, text="Voltaje (V)", image=icon_voltage, compound="top", 
+                               command=lambda: show_ohm_law_fields('V', calc_window), bg="white")
     button_voltage.grid(row=0, column=0, padx=10, pady=10)
 
-    button_current = tk.Button(calc_window, text="Current (I)", image=icon_current, compound="top", command=lambda: show_ohm_law_fields('I', calc_window))
+    button_current = tk.Button(calc_window, text="Corriente (I)", image=icon_current, compound="top", 
+                               command=lambda: show_ohm_law_fields('I', calc_window), bg="white")
     button_current.grid(row=0, column=1, padx=10, pady=10)
 
-    button_resistance = tk.Button(calc_window, text="Resistance (R)", image=icon_resistance, compound="top", command=lambda: show_ohm_law_fields('R', calc_window))
+    button_resistance = tk.Button(calc_window, text="Resistencia (R)", image=icon_resistance, compound="top", 
+                                  command=lambda: show_ohm_law_fields('R', calc_window), bg="white")
     button_resistance.grid(row=1, column=0, padx=10, pady=10)
 
-    button_others = tk.Button(calc_window, text="Others calcs", image=icon_others, compound="top", command=open_circuit_design_window)
+    button_others = tk.Button(calc_window, text="Otros cálculos", image=icon_others, compound="top", 
+                              command=open_circuit_design_window, bg="white")
     button_others.grid(row=1, column=1, padx=10, pady=10)
 
+    # Crear el botón de "Back" con fondo transparente
+    ttk.Button(calc_window, text="Atrás", command=calc_window.destroy, style='Delete.TButton').grid(row=2, column=0, columnspan=2, pady=10)
+
     centrar(calc_window)
+
 
 # ----------------------Circuitos en Serie y Paralelo--------------------------------------
 def calculate_circuits(entries, calc_window, mode):
     resistances = extract_list_values(entries[:-1])  # Excluir el campo de voltaje
 
     if not resistances:
-        messagebox.showerror("Input Error", "At least one resistance must be provided.", parent=calc_window)
+        messagebox.showerror("Input Error", "Se debe prever al menos una resistencia.", parent=calc_window)
         return
 
     if mode == 'serie':
@@ -339,45 +396,55 @@ def calculate_circuits(entries, calc_window, mode):
         try:
             equivalent_resistance = 1 / sum(1 / r for r in resistances)
         except ZeroDivisionError:
-            messagebox.showerror("Error", "Resistance cannot be zero in parallel circuits.", parent=calc_window)
+            messagebox.showerror("Error", "La resistencia no puede ser cero en circuitos paralelos.", parent=calc_window)
             return
 
     voltage = extract_value(entries[-1]) or 0  # Campo de voltaje, usar 0 si está vacío
     total_current = voltage / equivalent_resistance
 
     messagebox.showinfo(
-        "Result",
-        f"Equivalent Resistance = {equivalent_resistance:.2f} Ω\nVoltage = {voltage:.2f} V\nTotal Current = {total_current:.2f} A",
+        "Resultado",
+        f"Resistencia equivalente = {equivalent_resistance:.2f} Ω\nVoltaje = {voltage:.2f} V\nCorriente Total = {total_current:.2f} A",
         parent=calc_window
     )
 
-# ----------------------Otros calculosx--------------------------------------
 def show_circuit_fields(mode, calc_window):
+    # Estilo de los botones
+    style = ttk.Style()
+    style.configure('TButton', font=('Arial', 10, 'bold'))
+    style.configure('Delete.TButton', background='#e60902', font=('Arial', 10, 'bold')) 
+    style.configure('Custom.TFrame', background="#add8e6")
+
     calc_window = tk.Toplevel(root)
-    calc_window.title(f"Circuit Calculation ({mode.capitalize()})")
+    calc_window.title(f"Cálculo circuitos ({mode.capitalize()})")
     calc_window.configure(bg="#add8e6")  # Color celeste
     calc_window.grab_set()
+    calc_window.resizable(False, False)
 
     entries = []
 
     def update_widgets():
+        # Eliminar etiquetas existentes
         for widget in calc_window.winfo_children():
             if isinstance(widget, tk.Label):  # Sólo destruir etiquetas
                 widget.destroy()
 
         # Reorganizar los campos dinámicamente
         for idx, entry in enumerate(entries[:-1]):
-            tk.Label(calc_window, text=f"Resistance (R) {idx + 1}:", background="#add8e6").grid(row=idx, column=0, pady=5)
-            entry.grid(row=idx, column=1, pady=5)
+            tk.Label(calc_window, text=f"Resistancia (R) {idx + 1}:", background="#add8e6").grid(row=idx, column=0, padx=10, pady=5, sticky="w")
+            entry.grid(row=idx, column=1, padx=10, pady=5, sticky="e")
 
         # Campo de voltaje siempre al final
-        tk.Label(calc_window, text="Voltage (V):", background="#add8e6").grid(row=len(entries) - 1, column=0, pady=5)
-        entries[-1].grid(row=len(entries) - 1, column=1, pady=5)
+        tk.Label(calc_window, text="Voltaje (V):", background="#add8e6").grid(row=len(entries) - 1, column=0, padx=10, pady=5, sticky="w")
+        entries[-1].grid(row=len(entries) - 1, column=1, padx=10, pady=5, sticky="e")
 
-        # Botones
-        button_add.grid(row=len(entries), column=0, columnspan=2, pady=5)
-        button_calculate.grid(row=len(entries) + 1, column=0, columnspan=2, pady=10)
-        button_back.grid(row=len(entries) + 2, column=0, columnspan=2, pady=5)
+        # Los botones
+        # Botón Agregar
+        button_add.grid(row=len(entries), column=0, padx=10, pady=10, sticky="w")
+        # Botón Calcular
+        button_calculate.grid(row=len(entries), column=1, padx=10, pady=10, sticky="e")
+        # Botón Volver
+        button_back.grid(row=len(entries) + 1, column=0, columnspan=2, pady=10)
 
         # Ajustar tamaño de la ventana
         calc_window.update_idletasks()
@@ -394,25 +461,35 @@ def show_circuit_fields(mode, calc_window):
     entry_voltage = tk.Entry(calc_window)
     entries.extend([entry_r1, entry_r2, entry_voltage])
 
-    button_add = tk.Button(calc_window, text="Add Resistance", command=add_resistance_field)
-    button_calculate = tk.Button(calc_window, text="Calculate", command=lambda: calculate_circuits(entries, calc_window, mode))
-    button_back = tk.Button(calc_window, text="Back", command=calc_window.destroy)
+    # Botones con estilo
+    button_add = ttk.Button(calc_window, text="Agregar", command=add_resistance_field, style='TButton')
+    button_calculate = ttk.Button(calc_window, text="Calcular", command=lambda: calculate_circuits(entries, calc_window, mode), style='TButton')
+    button_back = ttk.Button(calc_window, text="Atrás", command=calc_window.destroy, style='Delete.TButton')
 
     update_widgets()
 
     centrar(calc_window)
 
+
 # ----------------------Ventanas de Opciones--------------------------------------
 def open_circuit_design_window():
+
+    # Estilo de los botones
+    style = ttk.Style()
+    style.configure('TButton', font=('Arial', 10, 'bold'))
+    style.configure('Delete.TButton', background='#e60902', font=('Arial', 10, 'bold')) 
+    style.configure('Custom.TFrame', background="#add8e6")
+
     circuit_window = tk.Toplevel(root)
-    circuit_window.title("Circuit Design Options")
+    circuit_window.title("Cálculo de circuitos")
     circuit_window.configure(bg="#add8e6")  # Color celeste
     circuit_window.grab_set()
+    circuit_window.resizable(False, False)
 
-    button_serie = tk.Button(circuit_window, text="Series Circuit", command=lambda: show_circuit_fields('serie', circuit_window))
+    button_serie = ttk.Button(circuit_window, text="Circuito en Serie", command=lambda: show_circuit_fields('serie', circuit_window), style='TButton')
     button_serie.grid(row=0, column=0, padx=10, pady=10)
 
-    button_parallel = tk.Button(circuit_window, text="Parallel Circuit", command=lambda: show_circuit_fields('paralelo', circuit_window))
+    button_parallel = ttk.Button(circuit_window, text="Circuito en Parelelo", command=lambda: show_circuit_fields('paralelo', circuit_window),style='TButton')
     button_parallel.grid(row=0, column=1, padx=10, pady=10)
 
     centrar(circuit_window)
@@ -436,8 +513,9 @@ def clear_and_insert(entry, value):
 # -------------------------Diseño circuitos-------------------------------------------
 def open_circuit_draw_window():
     draw_window = tk.Toplevel(root)
-    draw_window.title("Circuit Draw Options")
+    draw_window.title("Diseño de Circuitos")
     draw_window.grab_set()
+    draw_window.resizable(False, False)
 
     canvas = tk.Canvas(draw_window, bg="white", width=800, height=600)
     canvas.grid(row=1, column=0, columnspan=7)
@@ -559,6 +637,7 @@ def open_circuit_draw_window():
             return "Circuito en Paralelo"
 
     def start_simulation():
+
         if not connections:
             messagebox.showwarning("Iniciar Simulación", "No hay componentes conectados.", parent=draw_window)
             return
@@ -582,6 +661,13 @@ def open_circuit_draw_window():
         messagebox.showinfo("Resultados de Simulación", f"Voltaje total: {simulation_results['total_voltage']}V\nCorriente total: {simulation_results['total_current']}A\nTipo de circuito: {simulation_results['circuit_type']}", parent=draw_window)
 
     # Panel de control
+
+     # Estilo de los botones
+    style = ttk.Style()
+    style.configure('TButton', font=('Arial', 10, 'bold'))
+    style.configure('Delete.TButton', background='#e60902', font=('Arial', 10, 'bold')) 
+    style.configure('Custom.TFrame', background="#add8e6")
+
     buttons = [
         ("Agregar Fuente", lambda: add_component("Fuente de Voltaje", "V", "V")),
         ("Agregar Resistencia", lambda: add_component("Resistencia", "\u03A9", "R")),
@@ -595,30 +681,59 @@ def open_circuit_draw_window():
     ]
 
     for i, (text, command) in enumerate(buttons):
-        tk.Button(draw_window, text=text, command=command).grid(row=0, column=i)
+        ttk.Button(draw_window, text=text, command=command, style='TButton').grid(row=0, column=i)
     
     draw_grid()
     centrar(draw_window)
 
 # Ventana principal
 root = tk.Tk()
-root.title("Electrical Application")
+root.title("Cálculos Electrónicos")
 root.configure(bg="#add8e6")  # Color celeste
+root.resizable(False, False)
 
-ttk.Label(root, text="Select an option to continue:", font=("Arial", 14), background="#add8e6").grid(row=0, column=0, padx=20, pady=10)
+# Configuración de columnas y filas para centrar los widgets
+root.columnconfigure(0, weight=1)  # Hacer que la única columna ocupe todo el espacio
+root.rowconfigure([0, 1, 2, 3], weight=1)  # Hacer que las filas también ocupen espacio proporcional
 
-menu = ttk.Combobox(root, values=["User  Information", "Electrical Calculations", "Circuit Design"], state="readonly")
-menu.grid(row=1, column=0, padx=20, pady=10)
+# Etiqueta de bienvenida
+ttk.Label(
+    root,
+    text="Bienvenido, esta es una aplicación para cálculos eléctricos y \nanálisis de circuitos.",
+    font=("Arial", 14),
+    background="#add8e6",
+    anchor="center",  # Asegurar que el texto esté centrado dentro del widget
+    justify="center"  # Centrar el texto en múltiples líneas
+).grid(row=0, column=0, padx=20, pady=10, sticky="nsew")
 
+# Etiqueta de instrucciones centrada
+ttk.Label(
+    root,
+    text="Selecciona una opción para continuar:",
+    font=("Arial", 14),
+    background="#add8e6",
+    anchor="center",  # Asegurar que el texto esté centrado dentro del widget
+    justify="center"  # Centrar el texto en caso de varias líneas
+).grid(row=1, column=0, padx=20, pady=10, sticky="nsew")
+
+# Menú desplegable
+menu = ttk.Combobox(root, values=["Usuarios", "Ley de Ohm", "Diseño de Circuitos"], state="readonly")
+menu.grid(row=2, column=0, padx=20, pady=10, sticky="ns")
+
+# Botón para navegar
 def navigate_menu():
-    if menu.get() == "User  Information":
+    if menu.get() == "Usuarios":
         open_user_window()
-    elif menu.get() == "Electrical Calculations":
+    elif menu.get() == "Ley de Ohm":
         open_calculations_window()
-    elif menu.get() == "Circuit Design":
+    elif menu.get() == "Diseño de Circuitos":
         open_circuit_draw_window()
 
-ttk.Button(root, text="Go", command=navigate_menu).grid(row=2, column=0, pady=10)
+ttk.Button(
+    root,
+    text="Continuar",
+    command=navigate_menu
+).grid(row=3, column=0, padx=20, pady=10, sticky="ns")
 
 centrar(root)
 
