@@ -1,0 +1,206 @@
+Algoritmo GestionUsuariosLeyOhmYCircuitos
+
+    // Variables globales
+    Definir usuarios Como Arreglo // Lista para almacenar usuarios
+
+    // Iniciar programa
+    Escribir "Bienvenido al programa"
+    LeerUsuarios() // Cargar usuarios desde el archivo
+
+    Repetir
+        Escribir "Menú principal:"
+        Escribir "1. Gestión de usuarios"
+        Escribir "2. Cálculos de Ley de Ohm"
+        Escribir "3. Diseño de circuitos"
+        Escribir "4. Salir"
+        Escribir "Ingrese su opción:"
+        Leer opcion
+
+        Segun opcion Hacer
+            Caso 1:
+                GestionUsuarios()
+            Caso 2:
+                CalculosLeyDeOhm()
+            Caso 3:
+                DisenoDeCircuitos()
+            Caso 4:
+                Escribir "Saliendo del programa..."
+            De Otro Modo:
+                Escribir "Opción no válida"
+        Fin Segun
+    Hasta Que opcion = 4
+
+Fin Algoritmo
+
+// ------------------ Gestión de Usuarios ------------------
+Subproceso LeerUsuarios()
+    Si ExisteArchivo("users.csv") Entonces
+        AbrirArchivo("users.csv", "lectura")
+        Mientras NO EsFinArchivo("users.csv") Hacer
+            LeerLinea(usuarios)
+        Fin Mientras
+        CerrarArchivo("users.csv")
+    Fin Si
+Fin Subproceso
+
+Subproceso GuardarUsuarios()
+    AbrirArchivo("users.csv", "escritura")
+    Para i <- 1 Hasta Largo(usuarios) Hacer
+        EscribirLinea(usuarios[i])
+    Fin Para
+    CerrarArchivo("users.csv")
+Fin Subproceso
+
+Subproceso GestionUsuarios()
+    Repetir
+        Escribir "Gestión de Usuarios:"
+        Escribir "1. Agregar usuario"
+        Escribir "2. Editar usuario"
+        Escribir "3. Eliminar usuario"
+        Escribir "4. Listar usuarios"
+        Escribir "5. Volver al menú principal"
+        Leer opcionUsuarios
+
+        Segun opcionUsuarios Hacer
+            Caso 1:
+                AgregarUsuario()
+            Caso 2:
+                EditarUsuario()
+            Caso 3:
+                EliminarUsuario()
+            Caso 4:
+                ListarUsuarios()
+            Caso 5:
+                Escribir "Volviendo al menú principal..."
+            De Otro Modo:
+                Escribir "Opción no válida"
+        Fin Segun
+    Hasta Que opcionUsuarios = 5
+Fin Subproceso
+
+Subproceso AgregarUsuario()
+    Escribir "Ingrese ID (número positivo):"
+    Leer id
+    Escribir "Ingrese nombre:"
+    Leer nombre
+    Escribir "Ingrese correo:"
+    Leer correo
+    Si ValidarID(id) Y ValidarCorreo(correo) Entonces
+        AgregarElemento(usuarios, [id, nombre, correo])
+        GuardarUsuarios()
+        Escribir "Usuario agregado con éxito."
+    SiNo
+        Escribir "Datos no válidos. Intente de nuevo."
+    Fin Si
+Fin Subproceso
+
+Subproceso EditarUsuario()
+    Escribir "Ingrese ID del usuario a editar:"
+    Leer id
+    indice <- BuscarUsuario(id)
+    Si indice <> -1 Entonces
+        Escribir "Ingrese nuevo nombre:"
+        Leer nombre
+        Escribir "Ingrese nuevo correo:"
+        Leer correo
+        Si ValidarCorreo(correo) Entonces
+            usuarios[indice][2] <- nombre
+            usuarios[indice][3] <- correo
+            GuardarUsuarios()
+            Escribir "Usuario editado con éxito."
+        SiNo
+            Escribir "Correo no válido."
+        Fin Si
+    SiNo
+        Escribir "Usuario no encontrado."
+    Fin Si
+Fin Subproceso
+
+Subproceso EliminarUsuario()
+    Escribir "Ingrese ID del usuario a eliminar:"
+    Leer id
+    indice <- BuscarUsuario(id)
+    Si indice <> -1 Entonces
+        EliminarElemento(usuarios, indice)
+        GuardarUsuarios()
+        Escribir "Usuario eliminado con éxito."
+    SiNo
+        Escribir "Usuario no encontrado."
+    Fin Si
+Fin Subproceso
+
+Subproceso ListarUsuarios()
+    Para i <- 1 Hasta Largo(usuarios) Hacer
+        Escribir "ID:", usuarios[i][1], " Nombre:", usuarios[i][2], " Correo:", usuarios[i][3]
+    Fin Para
+Fin Subproceso
+
+Funcion ValidarID(id)
+    Retornar id > 0 Y NO ExisteID(id)
+Fin Funcion
+
+Funcion ValidarCorreo(correo)
+    Retornar Contiene(correo, "@") Y Contiene(correo, ".")
+Fin Funcion
+
+Funcion BuscarUsuario(id)
+    Para i <- 1 Hasta Largo(usuarios) Hacer
+        Si usuarios[i][1] = id Entonces
+            Retornar i
+        Fin Si
+    Fin Para
+    Retornar -1
+Fin Funcion
+
+// ------------------ Ley de Ohm ------------------
+Subproceso CalculosLeyDeOhm()
+    Escribir "Ley de Ohm:"
+    Escribir "Ingrese voltaje (V), corriente (I) o resistencia (R). Deje vacío un valor para calcularlo."
+    Escribir "Voltaje (V):"
+    Leer voltaje
+    Escribir "Corriente (I):"
+    Leer corriente
+    Escribir "Resistencia (R):"
+    Leer resistencia
+
+    Si EstaVacio(voltaje) Entonces
+        voltaje <- corriente * resistencia
+    SiNo Si EstaVacio(corriente) Entonces
+        corriente <- voltaje / resistencia
+    SiNo Si EstaVacio(resistencia) Entonces
+        resistencia <- voltaje / corriente
+    Fin Si
+
+    Escribir "Resultados:"
+    Escribir "Voltaje (V):", voltaje
+    Escribir "Corriente (I):", corriente
+    Escribir "Resistencia (R):", resistencia
+Fin Subproceso
+
+// ------------------ Diseño de Circuitos ------------------
+Subproceso DisenoDeCircuitos()
+    Escribir "Diseño de Circuitos:"
+    Escribir "1. Circuito en serie"
+    Escribir "2. Circuito en paralelo"
+    Leer opcionCircuito
+
+    Si opcionCircuito = 1 Entonces
+        CircuitoSerie()
+    SiNo Si opcionCircuito = 2 Entonces
+        CircuitoParalelo()
+    Fin Si
+Fin Subproceso
+
+Subproceso CircuitoSerie()
+    Escribir "Ingrese resistencias separadas por espacios:"
+    Leer resistencias
+    resistenciaTotal <- SumarElementos(resistencias)
+    Escribir "Resistencia total en serie:", resistenciaTotal
+Fin Subproceso
+
+Subproceso CircuitoParalelo()
+    Escribir "Ingrese resistencias separadas por espacios:"
+    Leer resistencias
+    resistenciaTotal <- 1 / SumarElementos(1 / resistencias)
+    Escribir "Resistencia total en paralelo:", resistenciaTotal
+Fin Subproceso
