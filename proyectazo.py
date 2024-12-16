@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import messagebox, ttk
+from tkinter import simpledialog, messagebox, ttk
 from tkinter import PhotoImage
 import csv, re
 
@@ -56,25 +56,17 @@ def add_user(user_window):
     users.append([id_val, name, email])
     save_users_to_csv(users)
     load_users()
-    print(users)
 
     # Limpiar los campos
     clear_fields()
 
 # Función para centrar la ventana
 def centrar(ventana):
-
     ventana.update_idletasks()
-
-    # Obtener el tamaño de la pantalla
     ancho = ventana.winfo_reqwidth()
     alto = ventana.winfo_reqheight()
-
-    # Calcular las coordenadas x, y
     x = (ventana.winfo_screenwidth() // 2) - (ancho // 2)
     y = (ventana.winfo_screenheight() // 2) - (alto // 2)
-
-    # Configurar la geometría de la ventana
     ventana.geometry(f"{ancho}x{alto}+{x}+{y}")
 
 # Función para editar un usuario
@@ -107,13 +99,11 @@ def edit_user(user_window):
         clear_fields()
         return  # Salir si el ID está duplicado
 
-    # Actualizar el usuario en la lista
-    users[selected_index] = [id_val, name, email]
+    # Actualizar el usuario en la lista users[selected_index] = [id_val, name, email]
     save_users_to_csv(users)
     load_users()
     print(users)
     clear_fields()
-
 
 # Función para eliminar un usuario
 def delete_user(user_window):
@@ -168,28 +158,33 @@ def select_user(event):
 # Ventana de usuarios
 def open_user_window():
     user_window = tk.Toplevel(root)
-    user_window.title("User Information")
-    user_window.configure(bg="#f2f2f2")
+    user_window.title("User  Information")
+    user_window.configure(bg="#add8e6")  # Color celeste
     user_window.grab_set()
 
     global entry_id, entry_name, entry_email, user_table
 
-    ttk.Label(user_window, text="ID:").grid(row=0, column=0, padx=10, pady=5, sticky="w")
+    # Etiquetas
+    ttk.Label(user_window, text="ID:", background="#add8e6").grid(row=0, column=0, padx=10, pady=5, sticky="w")
     entry_id = ttk.Entry(user_window)
     entry_id.grid(row=0, column=1, padx=10, pady=5)
 
-    ttk.Label(user_window, text="Name:").grid(row=1, column=0, padx=10, pady=5, sticky="w")
+    ttk.Label(user_window, text="Name:", background="#add8e6").grid(row=1, column=0, padx=10, pady=5, sticky="w")
     entry_name = ttk.Entry(user_window)
     entry_name.grid(row=1, column=1, padx=10, pady=5)
 
-    ttk.Label(user_window, text="Email:").grid(row=2, column=0, padx=10, pady=5, sticky="w")
+    ttk.Label(user_window, text="Email:", background="#add8e6").grid(row=2, column=0, padx=10, pady=5, sticky="w")
     entry_email = ttk.Entry(user_window)
     entry_email.grid(row=2, column=1, padx=10, pady=5)
 
-    ttk.Button(user_window, text="Add User", command=lambda: add_user(user_window)).grid(row=3, column=0, pady=10)
-    ttk.Button(user_window, text="Edit User", command=lambda: edit_user(user_window)).grid(row=3, column=1, pady=10)
+    # Definir el estilo de los botones
+    style = ttk.Style()
+    style.configure('TButton', background='#FF8C00', foreground='#000000', font=('Arial', 10, 'bold'))  # Naranja oscuro con texto negro
 
-    ttk.Button(user_window, text="Delete User", command=lambda: delete_user(user_window)).grid(row=4, column=0, columnspan=2, pady=10)
+    # Botones
+    ttk.Button(user_window, text="Add User", command=lambda: add_user(user_window), style='TButton').grid(row=3, column=0, pady=10)
+    ttk.Button(user_window, text="Edit User", command=lambda: edit_user(user_window), style='TButton').grid(row=3, column=1, pady=10)
+    ttk.Button(user_window, text="Delete User", command=lambda: delete_user(user_window), style='TButton').grid(row=4, column=0, columnspan=2, pady=10)
 
     user_table = ttk.Treeview(user_window, columns=("ID", "Name", "Email"), show="headings", height=8)
     user_table.heading("ID", text="ID")
@@ -199,10 +194,9 @@ def open_user_window():
 
     user_table.bind("<<TreeviewSelect>>", select_user)
 
-    ttk.Button(user_window, text="Back", command=user_window.destroy).grid(row=6, column=0, columnspan=2, pady=10)
+    ttk.Button(user_window, text="Back", command=user_window.destroy, style='TButton').grid(row=6, column=0, columnspan=2, pady=10)
 
     load_users()
-
     centrar(user_window)
 
 def extract_value(entry):
@@ -219,13 +213,13 @@ def clear_and_insert(entry, value):
 # ----------------------Ley de ohmm--------------------------------------
 
 def calculate_ohm_law(entries, calc_window):
-    """Calcula según la Ley de Ohm utilizando los valores en los campos proporcionados."""
+
     entry_voltage, entry_current, entry_resistance = entries
     v = extract_value(entry_voltage)
     i = extract_value(entry_current)
     r = extract_value(entry_resistance)
 
-     # Validar que todos los campos estén llenos
+    # Validar que todos los campos estén llenos
     if not any([v, i, r]):
         messagebox.showerror("Input Error", "At least two fields must be filled for calculation.", parent=calc_window)
         return
@@ -252,6 +246,7 @@ def show_ohm_law_fields(calculate_for, calc_window):
     """Muestra los campos necesarios según la selección del usuario."""
     calc_window = tk.Toplevel(root)
     calc_window.title("Ohm's Law Calculation")
+    calc_window.configure(bg="#add8e6")  # Color celeste
     calc_window.grab_set()
 
     entry_voltage = None
@@ -259,34 +254,34 @@ def show_ohm_law_fields(calculate_for, calc_window):
     entry_resistance = None
 
     if calculate_for == 'V':
-        label_current = tk.Label(calc_window, text="Current (I):")
+        label_current = tk.Label(calc_window, text="Current (I):", background="#add8e6")
         label_current.grid(row=0, column=0)
         entry_current = tk.Entry(calc_window)
         entry_current.grid(row=0, column=1)
 
-        label_resistance = tk.Label(calc_window, text="Resistance (R):")
+        label_resistance = tk.Label(calc_window, text="Resistance (R):", background="#add8e6")
         label_resistance.grid(row=1, column=0)
         entry_resistance = tk.Entry(calc_window)
         entry_resistance.grid(row=1, column=1)
 
     elif calculate_for == 'I':
-        label_voltage = tk.Label(calc_window, text="Voltage (V):")
+        label_voltage = tk.Label(calc_window, text="Voltage (V):", background="#add8e6")
         label_voltage.grid(row=0, column=0)
         entry_voltage = tk.Entry(calc_window)
         entry_voltage.grid(row=0, column=1)
 
-        label_resistance = tk.Label(calc_window, text="Resistance (R):")
+        label_resistance = tk.Label(calc_window, text="Resistance (R):", background="#add8e6")
         label_resistance.grid(row=1, column=0)
         entry_resistance = tk.Entry(calc_window)
         entry_resistance.grid(row=1, column=1)
 
     elif calculate_for == 'R':
-        label_voltage = tk.Label(calc_window, text="Voltage (V):")
+        label_voltage = tk.Label(calc_window, text="Voltage (V):", background="#add8e6")
         label_voltage.grid(row=0, column=0)
         entry_voltage = tk.Entry(calc_window)
         entry_voltage.grid(row=0, column=1)
 
-        label_current = tk.Label(calc_window, text="Current (I):")
+        label_current = tk.Label(calc_window, text="Current (I):", background="#add8e6")
         label_current.grid(row=1, column=0)
         entry_current = tk.Entry(calc_window)
         entry_current.grid(row=1, column=1)
@@ -305,14 +300,16 @@ def open_calculations_window():
     """Muestra una ventana con opciones de cálculo."""
     calc_window = tk.Toplevel(root)
     calc_window.title("Choose Calculation")
+    calc_window.configure(bg="#add8e6")  # Color celeste
     calc_window.grab_set()
 
-    global icon_voltage, icon_current, icon_resistance
+    global icon_voltage, icon_current, icon_resistance, icon_others
 
     # Cargar imágenes (asegúrate de que las rutas sean correctas)
     icon_voltage = PhotoImage(file="imgs/v.png")
     icon_current = PhotoImage(file="imgs/i.png")
     icon_resistance = PhotoImage(file="imgs/r.png")
+    icon_others = PhotoImage(file="imgs/c.png")
 
     button_voltage = tk.Button(calc_window, text="Voltage (V)", image=icon_voltage, compound="top", command=lambda: show_ohm_law_fields('V', calc_window))
     button_voltage.grid(row=0, column=0, padx=10, pady=10)
@@ -322,6 +319,9 @@ def open_calculations_window():
 
     button_resistance = tk.Button(calc_window, text="Resistance (R)", image=icon_resistance, compound="top", command=lambda: show_ohm_law_fields('R', calc_window))
     button_resistance.grid(row=1, column=0, padx=10, pady=10)
+
+    button_others = tk.Button(calc_window, text="Others calcs", image=icon_others, compound="top", command=open_circuit_design_window)
+    button_others.grid(row=1, column=1, padx=10, pady=10)
 
     centrar(calc_window)
 
@@ -351,10 +351,11 @@ def calculate_circuits(entries, calc_window, mode):
         parent=calc_window
     )
 
-# ----------------------Diseño de Circuitos--------------------------------------
+# ----------------------Otros calculosx--------------------------------------
 def show_circuit_fields(mode, calc_window):
     calc_window = tk.Toplevel(root)
     calc_window.title(f"Circuit Calculation ({mode.capitalize()})")
+    calc_window.configure(bg="#add8e6")  # Color celeste
     calc_window.grab_set()
 
     entries = []
@@ -366,11 +367,11 @@ def show_circuit_fields(mode, calc_window):
 
         # Reorganizar los campos dinámicamente
         for idx, entry in enumerate(entries[:-1]):
-            tk.Label(calc_window, text=f"Resistance (R) {idx + 1}:").grid(row=idx, column=0, pady=5)
+            tk.Label(calc_window, text=f"Resistance (R) {idx + 1}:", background="#add8e6").grid(row=idx, column=0, pady=5)
             entry.grid(row=idx, column=1, pady=5)
 
         # Campo de voltaje siempre al final
-        tk.Label(calc_window, text="Voltage (V):").grid(row=len(entries) - 1, column=0, pady=5)
+        tk.Label(calc_window, text="Voltage (V):", background="#add8e6").grid(row=len(entries) - 1, column=0, pady=5)
         entries[-1].grid(row=len(entries) - 1, column=1, pady=5)
 
         # Botones
@@ -381,7 +382,6 @@ def show_circuit_fields(mode, calc_window):
         # Ajustar tamaño de la ventana
         calc_window.update_idletasks()
         calc_window.geometry(f"{calc_window.winfo_reqwidth()}x{calc_window.winfo_reqheight()}")
-
 
     def add_resistance_field():
         entry = tk.Entry(calc_window)
@@ -406,6 +406,7 @@ def show_circuit_fields(mode, calc_window):
 def open_circuit_design_window():
     circuit_window = tk.Toplevel(root)
     circuit_window.title("Circuit Design Options")
+    circuit_window.configure(bg="#add8e6")  # Color celeste
     circuit_window.grab_set()
 
     button_serie = tk.Button(circuit_window, text="Series Circuit", command=lambda: show_circuit_fields('serie', circuit_window))
@@ -432,28 +433,193 @@ def clear_and_insert(entry, value):
         entry.delete(0, tk.END)
         entry.insert(0, value)
 
+# -------------------------Diseño circuitos-------------------------------------------
+def open_circuit_draw_window():
+    draw_window = tk.Toplevel(root)
+    draw_window.title("Circuit Draw Options")
+    draw_window.grab_set()
+
+    canvas = tk.Canvas(draw_window, bg="white", width=800, height=600)
+    canvas.grid(row=1, column=0, columnspan=7)
+    components = []
+    connections = []
+    simulation_results = {}
+
+    # Dibujar cuadrícula
+    def draw_grid():
+        for i in range(0, 800, 20):
+            canvas.create_line(i, 0, i, 600, fill="lightgray")
+        for i in range(0, 600, 20):
+            canvas.create_line(0, i, 800, i, fill="lightgray")
+
+    def add_component(type_name, unit, symbol, width=80, height=40):
+        value = simpledialog.askfloat(f"Agregar {type_name}", f"Ingrese el valor del/la {type_name} ({unit}):")
+        if value is not None:
+            x, y = 100 + len(components) * 100, 100
+            rect = canvas.create_rectangle(x, y, x + width, y + height, fill="white", outline="black")
+            text = canvas.create_text(x + width / 2, y + height / 2, text=f"{symbol}\n{value}{unit}", font=("Arial", 10))
+            components.append({"type": type_name, "x": x, "y": y, "value": value, "rect": rect, "text": text})
+            make_draggable(rect, text)
+
+    def make_draggable(rect, text):
+        def on_drag(event):
+            dx, dy = event.x - canvas.coords(rect)[0] - 40, event.y - canvas.coords(rect)[1] - 20
+            canvas.move(rect, dx, dy)
+            canvas.move(text, dx, dy)
+            for connection in connections:
+                update_connection(connection)
+
+        canvas.tag_bind(rect, "<B1-Motion>", on_drag)
+        canvas.tag_bind(text, "<B1-Motion>", on_drag)
+
+    def get_component_center(component):
+        coords = canvas.coords(component)
+        return (coords[0] + coords[2]) / 2, (coords[1] + coords[3]) / 2
+
+    def connect_components():
+        if len(components) < 2:
+            messagebox.showwarning("Conectar Componentes", "Se necesitan al menos dos componentes para conectar.", parent=draw_window)
+            return
+
+        for connection in connections:
+            canvas.delete(connection["line"])
+        connections.clear()
+
+        for i, comp1 in enumerate(components):
+            x1, y1 = get_component_center(comp1["rect"])
+            for j, comp2 in enumerate(components):
+                if i != j and not any(
+                    c for c in connections if (c["comp1"] == comp1 and c["comp2"] == comp2) or 
+                    (c["comp1"] == comp2 and c["comp2"] == comp1)
+                ):
+                    x2, y2 = get_component_center(comp2["rect"])
+                    distance = ((x2 - x1)**2 + (y2 - y1)**2) ** 0.5
+                    if distance < 150:  # Conectar solo si están cerca
+                        line = canvas.create_line(x1, y1, x2, y2, fill="blue", width=2)
+                        connections.append({"line": line, "comp1": comp1, "comp2": comp2})
+
+    def update_connection(connection):
+        x1, y1 = get_component_center(connection["comp1"]["rect"])
+        x2, y2 = get_component_center(connection["comp2"]["rect"])
+        canvas.coords(connection["line"], x1, y1, x2, y2)
+
+    def delete_circuit():
+        for connection in connections:
+            canvas.delete(connection["line"])
+        connections.clear()
+
+        for component in components:
+            canvas.delete(component["rect"])
+            canvas.delete(component["text"])
+        components.clear()
+
+        simulation_results.clear()
+
+    def delete_component():
+        if not components:
+            messagebox.showwarning("Eliminar Componente", "No hay componentes para eliminar.", parent=draw_window)
+            return
+
+        component_to_delete = simpledialog.askinteger("Eliminar Componente", "Ingrese el índice del componente a eliminar (1 a N):", minvalue=1, maxvalue=len(components), parent=draw_window)
+        if component_to_delete is not None:
+            component_to_delete -= 1
+            component = components.pop(component_to_delete)
+
+            canvas.delete(component["rect"])
+            canvas.delete(component["text"])
+
+            to_remove = [c for c in connections if c["comp1"] == component or c["comp2"] == component]
+            for connection in to_remove:
+                canvas.delete(connection["line"])
+                connections.remove(connection)
+
+    def classify_circuit():
+        if not connections:
+            return "Sin conexiones"
+
+        visited = set()
+        stack = [get_component_center(connections[0]["comp1"]["rect"])]
+
+        while stack:
+            current = stack.pop()
+            if current not in visited:
+                visited.add(current)
+                for connection in connections:
+                    comp1_center = get_component_center(connection["comp1"]["rect"])
+                    comp2_center = get_component_center(connection["comp2"]["rect"])
+
+                    if comp1_center == current and comp2_center not in visited:
+                        stack.append(comp2_center)
+                    elif comp2_center == current and comp1_center not in visited:
+                        stack.append(comp1_center)
+
+        if len(visited) == len(components):
+            return "Circuito en Serie"
+        else:
+            return "Circuito en Paralelo"
+
+    def start_simulation():
+        if not connections:
+            messagebox.showwarning("Iniciar Simulación", "No hay componentes conectados.", parent=draw_window)
+            return
+
+        total_voltage = sum(c["value"] for c in components if c["type"] == "Fuente de Voltaje")
+        total_resistance = sum(c["value"] for c in components if c["type"] == "Resistencia")
+        total_current = total_voltage / total_resistance if total_resistance > 0 else 0
+
+        circuit_type = classify_circuit()
+
+        simulation_results["total_voltage"] = total_voltage
+        simulation_results["total_current"] = total_current
+        simulation_results["circuit_type"] = circuit_type
+
+        messagebox.showinfo("Simulación", f"Voltaje total: {total_voltage}V\nCorriente total: {total_current}A\nTipo de circuito: {circuit_type}", parent=draw_window)
+
+    def show_message():
+        if not simulation_results:
+            messagebox.showwarning("Resultados de Simulación", "No se ha realizado ninguna simulación.", parent=draw_window)
+            return
+        messagebox.showinfo("Resultados de Simulación", f"Voltaje total: {simulation_results['total_voltage']}V\nCorriente total: {simulation_results['total_current']}A\nTipo de circuito: {simulation_results['circuit_type']}", parent=draw_window)
+
+    # Panel de control
+    buttons = [
+        ("Agregar Fuente", lambda: add_component("Fuente de Voltaje", "V", "V")),
+        ("Agregar Resistencia", lambda: add_component("Resistencia", "\u03A9", "R")),
+        ("Agregar LED", lambda: add_component("LED", "mA", "LED")),
+        ("Agregar Motor", lambda: add_component("Motor", "W", "M")),
+        ("Conectar Componentes", connect_components),
+        ("Eliminar Circuito", delete_circuit),
+        ("Eliminar Componente", delete_component),
+        ("Iniciar Simulación", start_simulation),
+        ("Mostrar Mensaje", show_message)
+    ]
+
+    for i, (text, command) in enumerate(buttons):
+        tk.Button(draw_window, text=text, command=command).grid(row=0, column=i)
+    
+    draw_grid()
+    centrar(draw_window)
+
 # Ventana principal
 root = tk.Tk()
 root.title("Electrical Application")
-root.configure(bg="#e6e6e6")
+root.configure(bg="#add8e6")  # Color celeste
 
-ttk.Label(root, text="Select an option to continue:", font=("Arial", 14)).grid(row=0, column=0, padx=20, pady=10)
+ttk.Label(root, text="Select an option to continue:", font=("Arial", 14), background="#add8e6").grid(row=0, column=0, padx=20, pady=10)
 
-menu = ttk.Combobox(root, values=["User Information", "Electrical Calculations", "Circuit Design"], state="readonly")
+menu = ttk.Combobox(root, values=["User  Information", "Electrical Calculations", "Circuit Design"], state="readonly")
 menu.grid(row=1, column=0, padx=20, pady=10)
 
 def navigate_menu():
-    if menu.get() == "User Information":
+    if menu.get() == "User  Information":
         open_user_window()
     elif menu.get() == "Electrical Calculations":
         open_calculations_window()
     elif menu.get() == "Circuit Design":
-        open_circuit_design_window()
+        open_circuit_draw_window()
 
 ttk.Button(root, text="Go", command=navigate_menu).grid(row=2, column=0, pady=10)
 
 centrar(root)
 
 root.mainloop()
-
-#ULTIMA ACTUALIZACIÓN
